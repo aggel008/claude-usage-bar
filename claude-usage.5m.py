@@ -1,5 +1,13 @@
-#!/Library/Frameworks/Python.framework/Versions/3.11/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# <xbar.title>Claude Usage</xbar.title>
+# <xbar.version>v2.1</xbar.version>
+# <xbar.author>aggel008</xbar.author>
+# <xbar.author.github>aggel008</xbar.author.github>
+# <xbar.desc>Live Claude.ai session (5h) and weekly usage in your menu bar — no API keys, reads directly from your browser</xbar.desc>
+# <xbar.image>https://raw.githubusercontent.com/aggel008/claude-usage-bar/main/screenshot.png</xbar.image>
+# <xbar.dependencies>python3</xbar.dependencies>
+# <xbar.abouturl>https://github.com/aggel008/claude-usage-bar</xbar.abouturl>
 # <swiftbar.title>Claude Usage</swiftbar.title>
 # <swiftbar.version>2.1</swiftbar.version>
 # <swiftbar.author>aggel008</swiftbar.author>
