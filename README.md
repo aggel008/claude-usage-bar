@@ -64,6 +64,16 @@ Your credentials never leave your machine. The script does not store session tok
 
 ---
 
+## Privacy
+
+- Runs entirely on your Mac
+- No external backend
+- No telemetry or analytics
+- No API keys, cookies, or session tokens are sent to the author or any third party
+- All requests are made locally from your machine using your own logged-in Claude session
+
+---
+
 ## Supported browsers
 
 | Browser | Supported |
