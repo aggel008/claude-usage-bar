@@ -4,6 +4,8 @@ A [SwiftBar](https://swiftbar.app) plugin that shows your **Claude.ai usage in t
 
 No API keys. No tokens. Reads directly from your already-logged-in browser.
 
+Also available in the official [xbar-plugins](https://github.com/matryer/xbar-plugins) collection.
+
 ![screenshot](screenshot.png)
 
 ---
