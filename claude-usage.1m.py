@@ -25,6 +25,8 @@ import json, subprocess, sys, os, time
 from datetime import datetime, timezone
 
 CONFIG = os.path.expanduser('~/.claude-usage.conf')
+CACHE  = os.path.expanduser('~/.claude-usage-cache.json')
+MAX_STALE = 6 * 3600          # show cached numbers for up to 6h when a fetch fails
 
 # ── appearance ────────────────────────────────────────────────────────────────
 # SwiftBar renders "light,dark" colour pairs and swaps them the instant the
@@ -82,6 +84,24 @@ def save_org(org_id):
     with open(CONFIG, 'w') as f:
         for k, v in cfg.items():
             f.write(f'{k}={v}\n')
+
+def save_cache(payload):
+    try:
+        with open(CACHE, 'w') as f:
+            json.dump({'ts': time.time(), 'data': payload}, f)
+    except Exception:
+        pass
+
+def load_cache():
+    try:
+        with open(CACHE) as f:
+            c = json.load(f)
+        age = time.time() - c['ts']
+        if age <= MAX_STALE:
+            return c['data'], age
+    except Exception:
+        pass
+    return None, None
 
 # ── browser plumbing ──────────────────────────────────────────────────────────
 def as_str(s):
@@ -230,6 +250,10 @@ def rank(p):
     if p >= 70:   return 1
     return 0
 
+def fmt_age(sec):
+    m = int(sec // 60)
+    return f'{m}m' if m < 60 else f'{m // 60}h {m % 60}m'
+
 def remedy(err):
     app = err.app or 'your browser'
     if err.status == 'JS_DISABLED':
@@ -257,6 +281,7 @@ def remedy(err):
 # ── main ──────────────────────────────────────────────────────────────────────
 cfg     = load_config()
 org_id  = cfg.get('ORG_ID')
+stale   = None
 err     = None
 
 try:
@@ -265,10 +290,13 @@ try:
         org_id = boot['account']['memberships'][0]['organization']['uuid']
         save_org(org_id)
     data = xhr(f'/api/organizations/{org_id}/usage')
+    save_cache(data)
 except Fetch as e:
-    err, data = e, None
+    err = e
+    data, stale = load_cache()
 except Exception as e:
-    err, data = Fetch('ERROR', str(e)), None
+    err = Fetch('ERROR', str(e))
+    data, stale = load_cache()
 
 if data is None:
     print('✦' if err and err.status in ('NO_TAB', 'NO_BROWSER') else '✦ !')
@@ -290,7 +318,9 @@ s_head = f'↺ {until(s_reset)}' if session_exhausted(s_pct) and s_reset else pc
 title  = '✦' if s_pct is None else f'✦ {s_head}'
 worst  = rank(s_pct)
 
-if worst == 2:
+if stale is not None:
+    print(f'{title} | color={DIM}')
+elif worst == 2:
     print(f'{title} | color={RED}')
 elif worst == 1:
     print(f'{title} | color={YELLOW}')
@@ -298,6 +328,12 @@ else:
     print(title)
 
 print('---')
+
+if stale is not None:
+    print(f'Stale — {fmt_age(stale)} old | color={YELLOW} font=Menlo size=11')
+    for line in remedy(err):
+        print(f'{line} | color={DIM} font=Menlo size=11')
+    print('---')
 
 # ── session ───────────────────────────────────────────────────────────────────
 s_bar, s_color = bar(s_pct)
