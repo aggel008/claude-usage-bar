@@ -16,6 +16,9 @@ Also available in the official [xbar-plugins](https://github.com/matryer/xbar-pl
 - **Dropdown**: session progress bar + time until reset
 - **Dropdown**: weekly progress bar + time until reset
 
+Colors adapt to light and dark appearance. The menu bar item is
+[configurable](#configuration).
+
 ---
 
 ## Requirements
@@ -23,8 +26,9 @@ Also available in the official [xbar-plugins](https://github.com/matryer/xbar-pl
 - macOS
 - [SwiftBar](https://swiftbar.app) (free, open source)
 - Python 3 (comes with macOS or install via `brew install python3`)
-- Claude.ai open in one of: **Chrome, Brave, Edge, Chromium, or Comet**
+- Claude.ai open in one of: **Chrome, Brave, Edge, Chromium, Comet, or Safari**
 - You must be logged in to claude.ai in that browser
+- **"Allow JavaScript from Apple Events" enabled** in that browser (see step 4)
 
 ---
 
@@ -50,11 +54,47 @@ Or just clone this repo and copy the `.py` file to your SwiftBar plugins folder.
 chmod +x claude-usage.1m.py
 ```
 
-**4. Open claude.ai** in Chrome, Brave, Edge, or Comet — and stay logged in.
+**4. Allow JavaScript from Apple Events.** This is off by default and the
+plugin cannot read anything without it:
 
-**5. Click Refresh** in SwiftBar or wait up to 1 minute.
+> **Chrome / Brave / Edge / Chromium / Comet** — menu bar ▸ **View** ▸
+> **Developer** ▸ **Allow JavaScript from Apple Events**
+>
+> **Safari** — **Settings** ▸ **Advanced** ▸ enable **"Show features for web
+> developers"**, then menu bar ▸ **Develop** ▸ **Allow JavaScript from Apple
+> Events**
 
-That's it. No configuration needed.
+This is a one-time, per-browser setting. It lets AppleScript run JavaScript in
+your tabs, which is how the plugin reads your usage without any API key.
+
+**5. Open claude.ai** in that browser — and stay logged in.
+
+**6. Click Refresh** in SwiftBar or wait up to 1 minute.
+
+The first time it runs, macOS asks whether SwiftBar may control your browser.
+Allow it, or the plugin gets no data.
+
+---
+
+## Configuration
+
+Optional. Create `~/.claude-usage.conf` with `KEY=value` lines:
+
+| Key | Values | Default | Effect |
+|---|---|---|---|
+| `MENUBAR` | `session`, `both` | `session` | `both` also shows the weekly figure: `✦ 42% · 18%` |
+| `MENUBAR_COLOR` | `true`, `false` | `true` | `false` leaves the menu bar text uncolored so it follows the system menu bar color |
+
+```
+MENUBAR=both
+MENUBAR_COLOR=false
+```
+
+With `MENUBAR=both`, the color reflects whichever limit is tightest, so a
+weekly squeeze is visible even when the session window is fresh.
+
+The file also caches `ORG_ID` after the first run. The dropdown is unaffected
+by these settings.
 
 ---
 
@@ -85,7 +125,7 @@ Your credentials never leave your machine. The script does not store session tok
 | Microsoft Edge | ✓ |
 | Chromium | ✓ |
 | Comet | ✓ |
-| Safari | ✗ (no AppleScript JS execution) |
+| Safari | ✓ |
 | Firefox | ✗ (no AppleScript JS execution) |
 | Arc | not tested |
 
@@ -93,9 +133,17 @@ Your credentials never leave your machine. The script does not store session tok
 
 ## Troubleshooting
 
-**`✦` with no number** — claude.ai tab not found. Make sure it's open and you're logged in.
+**`✦` or `✦ !` with no number** — click the icon; the dropdown names the exact
+cause and its fix. The common ones:
 
-**`✦ !`** — unexpected error. Click the icon to see details.
+- *JavaScript from Apple Events is off* — do step 4 above.
+- *SwiftBar is not allowed to control &lt;browser&gt;* — System Settings ▸ Privacy
+  & Security ▸ Automation ▸ SwiftBar ▸ enable your browser.
+- *&lt;browser&gt; is running but has no claude.ai tab* — open one.
+- *claude.ai returned 401* — sign in again.
+
+**Numbers look dimmed** — the last fetch failed and you're seeing cached values.
+The dropdown shows how old they are and why the refresh failed.
 
 **Wrong Python path** — the shebang line uses `/usr/bin/env python3`. If `python3` is not on your `PATH`:
 ```bash
