@@ -26,11 +26,31 @@ from datetime import datetime, timezone
 
 CONFIG = os.path.expanduser('~/.claude-usage.conf')
 
-BLUE   = '#5C8EFF'
-DIM    = '#888888'
-RED    = '#FF5555'
-TEXT   = '#E8E8E8'
-YELLOW = '#F5A623'
+# ── appearance ────────────────────────────────────────────────────────────────
+# SwiftBar renders "light,dark" colour pairs and swaps them the instant the
+# system appearance changes. xbar and a plain terminal don't, so there we
+# resolve the pair ourselves against the current appearance.
+_SWIFTBAR = bool(os.environ.get('SWIFTBAR'))
+
+def _dark_mode():
+    try:
+        r = subprocess.run(['defaults', 'read', '-g', 'AppleInterfaceStyle'],
+                           capture_output=True, text=True, timeout=3)
+        return r.returncode == 0 and 'dark' in r.stdout.lower()
+    except Exception:
+        return True   # assume dark: light text on a dark bar is the safer miss
+
+_DARK = None if _SWIFTBAR else _dark_mode()
+
+def pair(light, dark):
+    return f'{light},{dark}' if _SWIFTBAR else (dark if _DARK else light)
+
+#             light mode   dark mode
+TEXT   = pair('#1C1C1E',  '#E8E8E8')
+DIM    = pair('#6E6E73',  '#9A9A9E')
+BLUE   = pair('#0B5FD0',  '#5C8EFF')
+RED    = pair('#C5221F',  '#FF5555')
+YELLOW = pair('#A66300',  '#F5A623')
 
 # name, engine, where the .app lives
 BROWSERS = [
