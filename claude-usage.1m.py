@@ -281,6 +281,14 @@ def remedy(err):
 # ── main ──────────────────────────────────────────────────────────────────────
 cfg     = load_config()
 org_id  = cfg.get('ORG_ID')
+
+def _flag(key, default):
+    return cfg.get(key, default).strip().lower()
+
+# Menu bar preferences. Defaults reproduce the long-standing behaviour;
+# set these in ~/.claude-usage.conf to change it.
+MENUBAR_BOTH  = _flag('MENUBAR', 'session') == 'both'
+MENUBAR_COLOR = _flag('MENUBAR_COLOR', 'true') not in ('false', '0', 'no', 'off')
 stale   = None
 err     = None
 
@@ -313,12 +321,22 @@ s_reset = data.get('five_hour', {}).get('resets_at')
 w_pct   = data.get('seven_day', {}).get('utilization')
 w_reset = data.get('seven_day', {}).get('resets_at')
 
-# ── menu bar icon ─────────────────────────────────────────────────────────
+# ── menu bar icon ─────────────────────────────────────────────────────────────
+# MENUBAR=both adds the weekly figure: "✦ 42% · 18%".
+# MENUBAR_COLOR=false leaves the title uncoloured so it follows the system
+# menu bar colour. Never use "|" here, SwiftBar treats it as the delimiter.
 s_head = f'↺ {until(s_reset)}' if session_exhausted(s_pct) and s_reset else pct_str(s_pct)
-title  = '✦' if s_pct is None else f'✦ {s_head}'
-worst  = rank(s_pct)
 
-if stale is not None:
+if MENUBAR_BOTH:
+    title = '✦' if (s_pct is None and w_pct is None) else f'✦ {s_head} · {pct_str(w_pct)}'
+    worst = max(rank(s_pct), rank(w_pct))
+else:
+    title = '✦' if s_pct is None else f'✦ {s_head}'
+    worst = rank(s_pct)
+
+if not MENUBAR_COLOR:
+    print(title)
+elif stale is not None:
     print(f'{title} | color={DIM}')
 elif worst == 2:
     print(f'{title} | color={RED}')
