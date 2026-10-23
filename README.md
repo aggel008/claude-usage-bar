@@ -16,6 +16,12 @@ Also available in the official [xbar-plugins](https://github.com/matryer/xbar-pl
 - **Dropdown**: session progress bar + time until reset
 - **Dropdown**: weekly progress bar + time until reset
 
+Colors adapt to light and dark appearance. The menu bar item is
+[configurable](#configuration).
+
+**Several accounts** are shown side by side — see
+[Multiple accounts](#multiple-accounts).
+
 ---
 
 ## Requirements
@@ -23,8 +29,9 @@ Also available in the official [xbar-plugins](https://github.com/matryer/xbar-pl
 - macOS
 - [SwiftBar](https://swiftbar.app) (free, open source)
 - Python 3 (comes with macOS or install via `brew install python3`)
-- Claude.ai open in one of: **Chrome, Brave, Edge, Chromium, or Comet**
+- Claude.ai open in one of: **Chrome, Brave, Edge, Chromium, Comet, or Safari**
 - You must be logged in to claude.ai in that browser
+- **"Allow JavaScript from Apple Events" enabled** in that browser (see step 4)
 
 ---
 
@@ -50,17 +57,83 @@ Or just clone this repo and copy the `.py` file to your SwiftBar plugins folder.
 chmod +x claude-usage.1m.py
 ```
 
-**4. Open claude.ai** in Chrome, Brave, Edge, or Comet — and stay logged in.
+**4. Allow JavaScript from Apple Events.** This is off by default and the
+plugin cannot read anything without it:
 
-**5. Click Refresh** in SwiftBar or wait up to 1 minute.
+> **Chrome / Brave / Edge / Chromium / Comet** — menu bar ▸ **View** ▸
+> **Developer** ▸ **Allow JavaScript from Apple Events**
+>
+> **Safari** — **Settings** ▸ **Advanced** ▸ enable **"Show features for web
+> developers"**, then menu bar ▸ **Develop** ▸ **Allow JavaScript from Apple
+> Events**
 
-That's it. No configuration needed.
+This is a one-time, per-browser setting. It lets AppleScript run JavaScript in
+your tabs, which is how the plugin reads your usage without any API key.
+
+**5. Open claude.ai** in that browser — and stay logged in.
+
+**6. Click Refresh** in SwiftBar or wait up to 1 minute.
+
+The first time it runs, macOS asks whether SwiftBar may control your browser.
+Allow it, or the plugin gets no data.
+
+---
+
+## Configuration
+
+Optional. Create `~/.claude-usage.conf` with `KEY=value` lines:
+
+| Key | Values | Default | Effect |
+|---|---|---|---|
+| `MENUBAR` | `session`, `weekly`, `both` | `session` | Which limit the menu bar shows. `both`: `✦ 42% · 18%` |
+| `MENUBAR_COLOR` | `true`, `false` | `true` | `false` leaves the menu bar text uncolored so it follows the system menu bar color |
+| `LABEL.<email>` | any short text | — | Tag shown before that account's figure when several accounts are signed in |
+
+```
+MENUBAR=both
+MENUBAR_COLOR=false
+```
+
+With `MENUBAR=both`, the color reflects whichever limit is tightest, so a
+weekly squeeze is visible even when the session window is fresh.
+
+The dropdown is unaffected by these settings.
+
+---
+
+## Multiple accounts
+
+Signed in to more than one Claude account — say in two Chrome profiles, or
+Chrome and Safari? Keep a claude.ai tab open for each and the plugin shows
+them all: one figure per account in the menu bar, joined by `·` and sorted by
+email, and a section per account in the dropdown.
+
+```
+✦ 42% · 7%          MENUBAR=session (default)
+✦ 18% · 95%         MENUBAR=weekly
+✦ 42%/18% · 7%/95%  MENUBAR=both
+```
+
+To tell them apart in the menu bar, give each a label:
+
+```
+LABEL.me@work.com=W
+LABEL.me@home.com=P
+```
+
+which reads `✦ W 42% · P 7%`. Several tabs of the same account are counted
+once. If an account's tab is closed, its last reading stays in the dropdown,
+marked stale, for up to six hours.
+
+With a single account everything looks exactly as before.
 
 ---
 
 ## How it works
 
-SwiftBar runs the script every minute. The script uses AppleScript to execute a `XMLHttpRequest` inside your open claude.ai browser tab — calling Anthropic's internal `/api/organizations/{id}/usage` endpoint with your existing session. The response is parsed and displayed.
+SwiftBar runs the script every minute. The script uses AppleScript to execute a `XMLHttpRequest` inside each open claude.ai browser tab — calling Anthropic's internal `/api/organizations/{id}/usage` endpoint with that tab's existing session. Each tab answers for the account signed in to its browser profile. The response is parsed and displayed.
+
+Which account and organization a tab belongs to is looked up once via `/api/bootstrap` and remembered in the page until it reloads, so a normal refresh costs one request per account. The organization is the one claude.ai has active, so the figures match claude.ai's own usage page even if you also belong to an API (Console) organization.
 
 Your credentials never leave your machine. The script does not store session tokens.
 
@@ -85,7 +158,7 @@ Your credentials never leave your machine. The script does not store session tok
 | Microsoft Edge | ✓ |
 | Chromium | ✓ |
 | Comet | ✓ |
-| Safari | ✗ (no AppleScript JS execution) |
+| Safari | ✓ |
 | Firefox | ✗ (no AppleScript JS execution) |
 | Arc | not tested |
 
@@ -93,9 +166,17 @@ Your credentials never leave your machine. The script does not store session tok
 
 ## Troubleshooting
 
-**`✦` with no number** — claude.ai tab not found. Make sure it's open and you're logged in.
+**`✦` or `✦ !` with no number** — click the icon; the dropdown names the exact
+cause and its fix. The common ones:
 
-**`✦ !`** — unexpected error. Click the icon to see details.
+- *JavaScript from Apple Events is off* — do step 4 above.
+- *SwiftBar is not allowed to control &lt;browser&gt;* — System Settings ▸ Privacy
+  & Security ▸ Automation ▸ SwiftBar ▸ enable your browser.
+- *&lt;browser&gt; is running but has no claude.ai tab* — open one.
+- *claude.ai returned 401* — sign in again.
+
+**Numbers look dimmed** — the last fetch failed and you're seeing cached values.
+The dropdown shows how old they are and why the refresh failed.
 
 **Wrong Python path** — the shebang line uses `/usr/bin/env python3`. If `python3` is not on your `PATH`:
 ```bash
